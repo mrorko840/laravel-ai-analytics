@@ -81,6 +81,7 @@ class ChatController extends Controller
                 'chat_id' => $chat->id, // Send ID back to frontend if they started a brand new chat
                 'reply' => $replyContent,
                 'sql' => config('app.debug') ? $sql : null, // Display SQL safely in debug interface
+                'report_id' => $responsePayload['report_id'] ?? null,
             ]);
 
         } catch (\Exception $e) {

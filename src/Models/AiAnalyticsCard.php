@@ -14,6 +14,11 @@ class AiAnalyticsCard extends Model
         'table_name',
         'column_name',
         'aggregation_type',
+        'filters',
         'order_column',
+    ];
+
+    protected $casts = [
+        'filters' => 'json',
     ];
 }

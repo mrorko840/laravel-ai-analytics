@@ -22,6 +22,34 @@ class DashboardController extends Controller
             try {
                 $query = DB::connection($connectionName)->table($card->table_name);
                 
+                // Construct Filters dynamically
+                if (is_array($card->filters)) {
+                    foreach ($card->filters as $filter) {
+                        $col = $filter['column'] ?? null;
+                        $op = $filter['operator'] ?? '=';
+                        $val = $filter['value'] ?? null;
+
+                        if (!$col) continue;
+
+                        if ($op === 'IS NULL') {
+                            $query->whereNull($col);
+                        } elseif ($op === 'IS NOT NULL') {
+                            $query->whereNotNull($col);
+                        } elseif (in_array($op, ['IN', 'NOT IN'])) {
+                            $valuesArray = array_map('trim', explode(',', $val));
+                            if ($op === 'IN') {
+                                $query->whereIn($col, $valuesArray);
+                            } else {
+                                $query->whereNotIn($col, $valuesArray);
+                            }
+                        } elseif ($op === 'LIKE') {
+                            $query->where($col, 'LIKE', '%' . $val . '%');
+                        } else {
+                            $query->where($col, $op, $val);
+                        }
+                    }
+                }
+                
                 $value = 0;
                 switch ($card->aggregation_type) {
                     case 'COUNT':

@@ -58,15 +58,17 @@
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead>
                             <tr class="bg-gray-50">
-                                @foreach(array_keys(current($metric['data']['value'])) as $th)
-                                    <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">{{ $th }}</th>
-                                @endforeach
+                                @if(!empty($metric['data']['value']))
+                                    @foreach(array_keys((array) current($metric['data']['value'])) as $th)
+                                        <th class="px-4 py-2 text-left font-medium text-gray-500 uppercase">{{ $th }}</th>
+                                    @endforeach
+                                @endif
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @foreach($metric['data']['value'] as $row)
                                 <tr>
-                                    @foreach($row as $cell)
+                                    @foreach((array) $row as $cell)
                                         <td class="px-4 py-2 text-gray-900">{{ is_array($cell) ? json_encode($cell) : $cell }}</td>
                                     @endforeach
                                 </tr>
@@ -77,5 +79,31 @@
             </div>
         @endif
     @endforeach
+
+    @if(!empty($report->payload['tabular_data']) && is_array($report->payload['tabular_data']) && count($report->payload['tabular_data']) > 0)
+        <div class="bg-white rounded-xl shadow-sm border p-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Generated SQL Table Data</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm border">
+                    <thead class="bg-indigo-50 border-b">
+                        <tr>
+                            @foreach(array_keys((array) current($report->payload['tabular_data'])) as $th)
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 uppercase tracking-wide">{{ $th }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($report->payload['tabular_data'] as $row)
+                            <tr class="hover:bg-gray-50">
+                                @foreach((array) $row as $cell)
+                                    <td class="px-4 py-3 text-gray-800">{{ is_scalar($cell) || is_null($cell) ? $cell : json_encode($cell) }}</td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 
 @endsection

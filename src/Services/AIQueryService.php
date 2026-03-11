@@ -40,7 +40,26 @@ class AIQueryService
 
         $systemPrompt = "You are a database analytics AI assistant. You must generate a highly efficient SQL query based on the user's prompt.\n";
         $systemPrompt .= "Use ONLY the following database schema:\n" . $schemaContext . "\n";
-        $systemPrompt .= "IMPORTANT RULES:\n";
+        
+        // Inject defined Semantic Metrics so it inherently learns Business Language mapped to specific Cards directly
+        $cards = \Mrorko840\AiAnalytics\Models\AiAnalyticsCard::all();
+        if ($cards->count() > 0) {
+            $systemPrompt .= "\nBUSINESS DEFINITIONS/CONTEXT YOU MUST LEARN:\n";
+            foreach ($cards as $card) {
+                if (is_array($card->filters) && count($card->filters) > 0) {
+                    $systemPrompt .= "- When the user mentions '{$card->name}', this is defined internally as querying table '{$card->table_name}' with the following condition(s): ";
+                    foreach ($card->filters as $f) {
+                        $col = $f['column'] ?? '';
+                        $op = $f['operator'] ?? '=';
+                        $val = $f['value'] ?? '';
+                        $systemPrompt .= "{$col} {$op} {$val} AND ";
+                    }
+                    $systemPrompt = rtrim($systemPrompt, " AND ") . ".\n";
+                }
+            }
+        }
+
+        $systemPrompt .= "\nIMPORTANT RULES:\n";
         $systemPrompt .= "1. Respond ONLY with the raw SQL query. No markdown formatting, no comments, no explanations.\n";
         $systemPrompt .= "2. The query MUST start with SELECT and must NOT contain any destructive operations.\n";
         $systemPrompt .= "3. Format dates properly depending on the usual SQL standards.\n";
@@ -92,10 +111,41 @@ class AIQueryService
             
             $summary = $this->aiProvider->ask($summaryPrompt, [$summarySystemPrompt]);
 
+            $isReportIntent = preg_match('/(generate|create|banao|dao|make|show|export).*report/i', $prompt);
+            $reportId = null;
+            
+            if ($isReportIntent) {
+                $reportTitle = "Report: " . substr(ucfirst(preg_replace('/[^a-zA-Z0-9 ]/m', '', $prompt)), 0, 50);
+                
+                $payloadData = [
+                    'id' => uniqid(),
+                    'title' => $reportTitle,
+                    'subtitle' => 'Chat Generated Analytics Report',
+                    'period' => 'Custom Chat Context',
+                    'insights' => $summary,
+                    'raw_query' => $sql,
+                    'tabular_data' => array_slice($resultsArray, 0, 100), // Cap report data length to 100 max
+                    'metadata' => [
+                        'generated_at' => now()->toDateTimeString(),
+                    ]
+                ];
+
+                $report = \Mrorko840\AiAnalytics\Models\AiAnalyticsReport::create([
+                    'user_id' => auth()->id() ?? 0,
+                    'title' => $reportTitle,
+                    'report_type' => 'chat_generated',
+                    'filters' => [],
+                    'payload' => $payloadData,
+                ]);
+                
+                $reportId = $report->id;
+            }
+
             return [
                 'reply' => $summary,
                 'data' => $resultsArray,
                 'sql' => $sql,
+                'report_id' => $reportId,
             ];
 
         } catch (Exception $e) {

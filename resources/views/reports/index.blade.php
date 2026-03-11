@@ -39,11 +39,11 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span
                                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                {{ \Carbon\Carbon::parse($report->payload['period'] ?? now())->diffForHumans() }}
+                                {{ $report->payload['period'] ?? 'Lifetime' }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $report->created_at->format('M d, Y H:i') }}
+                            {{ $report->created_at->format('M d, Y H:i') }} ({{ $report->created_at->diffForHumans() }})
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <a href="{{ route('ai-analytics.reports.show', $report->id) }}"

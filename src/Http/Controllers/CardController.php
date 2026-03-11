@@ -43,6 +43,10 @@ class CardController extends Controller
             'table_name' => 'required|string',
             'column_name' => 'nullable|string',
             'aggregation_type' => 'required|string|in:COUNT,SUM,AVG,MAX,MIN',
+            'filters' => 'nullable|array',
+            'filters.*.column' => 'required_with:filters|string',
+            'filters.*.operator' => 'required_with:filters|string',
+            'filters.*.value' => 'nullable|string',
         ]);
 
         $maxOrder = AiAnalyticsCard::max('order_column') ?? 0;
@@ -53,6 +57,7 @@ class CardController extends Controller
             'table_name' => $request->table_name,
             'column_name' => $request->column_name,
             'aggregation_type' => $request->aggregation_type,
+            'filters' => $request->filters,
             'order_column' => $maxOrder + 1,
         ]);
 
@@ -79,9 +84,17 @@ class CardController extends Controller
             'table_name' => 'required|string',
             'column_name' => 'nullable|string',
             'aggregation_type' => 'required|string|in:COUNT,SUM,AVG,MAX,MIN',
+            'filters' => 'nullable|array',
+            'filters.*.column' => 'required_with:filters|string',
+            'filters.*.operator' => 'required_with:filters|string',
+            'filters.*.value' => 'nullable|string',
         ]);
 
-        $card->update($request->all());
+        $data = $request->all();
+        // If filters are completely unset/removed, force null correctly instead of dropping the trait
+        $data['filters'] = $request->input('filters', null);
+
+        $card->update($data);
 
         return redirect()->route('ai-analytics.dashboard')->with('success', 'Card updated successfully.');
     }

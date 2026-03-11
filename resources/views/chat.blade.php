@@ -176,6 +176,21 @@
                 let html = `<div class="max-w-xl bg-gray-100 text-gray-800 p-4 rounded-xl shadow-sm">
                         <p class="text-sm whitespace-pre-wrap leading-relaxed">${data.reply}</p>`;
                 
+                if (data.report_id) {
+                    html += `
+                        <div class="mt-4 p-4 bg-white border border-indigo-100 rounded-lg shadow-sm">
+                            <div class="flex items-center gap-2 mb-2 text-indigo-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span class="font-bold text-sm">Report Generated Successfully</span>
+                            </div>
+                            <div class="flex gap-2 text-xs mt-3">
+                                <a href="/ai-analytics/reports/${data.report_id}" target="_blank" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded hover:bg-indigo-100 font-semibold cursor-pointer border border-indigo-200">View Full Report</a>
+                                <a href="/ai-analytics/reports/${data.report_id}/export/pdf" target="_blank" class="bg-gray-50 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 font-semibold cursor-pointer border">Export PDF</a>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 if (data.sql) {
                     html += `<div class="mt-3 p-2 bg-gray-800 text-green-400 font-mono text-[10px] rounded overflow-x-auto"><span class="text-gray-400 block mb-1">Generated Safe SQL:</span>${data.sql}</div>`;
                 }
