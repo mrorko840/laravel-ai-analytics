@@ -1,0 +1,733 @@
+You are an elite senior Laravel package architect and staff-level PHP engineer.
+
+Your job is to build a COMPLETE, production-grade, reusable, Composer-installable Laravel package from scratch.
+
+Package name:
+mrorko840/laravel-ai-analytics
+
+Package folder/repository name:
+laravel-ai-analytics
+
+Primary goal:
+Build a UNIVERSAL AI-powered analytics and reporting package for Laravel that can be installed into ANY Laravel project and configured to understand that project's business entities, metrics, events, and reports.
+
+This must NOT be a toy demo.
+This must be a serious, cleanly architected, extensible package suitable for real production use.
+
+==================================================
+HIGH LEVEL PRODUCT VISION
+==================================================
+
+This package should let Laravel project owners install the package and then:
+
+1. Ask business questions in a chat interface
+2. View analytics dashboards
+3. Track events
+4. Analyze users, orders, products, transactions, conversions
+5. Generate reports
+6. Export reports as PDF / CSV / JSON / HTML
+7. Reuse the package across many Laravel projects with different database schemas
+
+Example admin questions:
+- How many users signed up in the last 7 days?
+- What is today's revenue?
+- How many withdrawals happened this week?
+- Which products are viewed frequently but not purchased?
+- Show signup to deposit conversion for the current month
+- Compare this month vs last month revenue
+- Generate a PDF report for the last 30 days
+
+==================================================
+TECHNICAL COMPATIBILITY
+==================================================
+
+Target:
+- PHP 8.2+
+- Laravel 10+
+- Laravel 11+
+
+Must follow:
+- PSR-4
+- SOLID
+- clean architecture
+- separation of concerns
+- configuration-driven design
+- testable services
+- minimal hardcoding
+- clear contracts/interfaces
+- package auto-discovery support
+- publishable config / migrations / views
+
+==================================================
+CRITICAL UNIVERSAL PACKAGE REQUIREMENT
+==================================================
+
+DO NOT hardcode business table names.
+
+This package must work with different schemas:
+- users vs members vs customers
+- orders vs sales vs purchases
+- products vs items vs plans
+- transactions vs payments vs ledgers
+
+Therefore the package MUST use a config-driven entity mapping system.
+
+The package should understand abstract business entities such as:
+- user
+- order
+- product
+- transaction
+- visit
+- product_view
+- cart_item
+- deposit
+- withdrawal
+
+The host Laravel application must be able to configure how those entities map to its own models/tables/columns.
+
+==================================================
+PACKAGE ARCHITECTURE REQUIREMENTS
+==================================================
+
+Build the package as a clean modular package with this approximate structure:
+
+src/
+  AiAnalyticsServiceProvider.php
+  Contracts/
+  Support/
+  Facades/
+  Services/
+  Drivers/
+  Metrics/
+  Chat/
+  Reports/
+  PDF/
+  Models/
+  Console/
+  Http/
+    Controllers/
+    Middleware/
+    Requests/
+  DTOs/
+  Enums/
+  Exceptions/
+  Repositories/
+
+config/
+  ai-analytics.php
+
+database/
+  migrations/
+
+resources/
+  views/
+  lang/
+
+routes/
+  web.php
+  api.php
+
+tests/
+
+==================================================
+PACKAGE FEATURES
+==================================================
+
+The package must include the following major subsystems:
+
+1. Core analytics engine
+2. Config-driven entity mapping
+3. Metric registry
+4. AI chat assistant
+5. Event tracking system
+6. Dashboard widgets
+7. Report generation system
+8. PDF export
+9. CSV export
+10. JSON export
+11. HTML export
+12. Saved chat history
+13. Saved reports
+14. Metrics caching
+15. Queue-ready report generation
+16. Safe query boundary
+17. Role/permission-ready middleware hooks
+18. Blade-based admin UI
+19. API endpoints for future headless use
+20. Test coverage for core services
+
+==================================================
+CONFIG FILE REQUIREMENTS
+==================================================
+
+Create config/ai-analytics.php
+
+It must include sections like:
+
+- enabled
+- route_prefix
+- middleware
+- database_connection
+- cache
+- queue
+- ai
+- exports
+- ui
+- tracking
+- entities
+- metrics
+- security
+- masking
+- reports
+
+Create a robust entity mapping structure similar to:
+
+'entities' => [
+    'user' => [
+        'model' => App\Models\User::class,
+        'created_at_column' => 'created_at',
+        'id_column' => 'id',
+    ],
+
+    'order' => [
+        'model' => App\Models\Order::class,
+        'created_at_column' => 'created_at',
+        'amount_column' => 'total',
+        'status_column' => 'status',
+        'paid_statuses' => ['paid', 'completed'],
+        'user_foreign_key' => 'user_id',
+    ],
+
+    'product' => [
+        'model' => App\Models\Product::class,
+        'id_column' => 'id',
+        'name_column' => 'name',
+        'price_column' => 'price',
+    ],
+
+    'transaction' => [
+        'model' => App\Models\Transaction::class,
+        'created_at_column' => 'created_at',
+        'amount_column' => 'amount',
+        'type_column' => 'type',
+        'deposit_value' => 'deposit',
+        'withdrawal_value' => 'withdraw',
+        'status_column' => 'status',
+        'success_statuses' => ['approved', 'completed', 'success'],
+        'user_foreign_key' => 'user_id',
+    ],
+
+    'visit' => [
+        'table' => 'page_visits',
+        'created_at_column' => 'created_at',
+        'user_foreign_key' => 'user_id',
+        'url_column' => 'url',
+    ],
+
+    'product_view' => [
+        'table' => 'product_views',
+        'created_at_column' => 'created_at',
+        'product_foreign_key' => 'product_id',
+        'user_foreign_key' => 'user_id',
+    ],
+]
+
+Also allow custom drivers and closures later.
+
+==================================================
+DATABASE TABLES TO CREATE
+==================================================
+
+Create migrations for package-owned tables:
+
+1. ai_analytics_events
+2. ai_analytics_chats
+3. ai_analytics_messages
+4. ai_analytics_reports
+5. ai_analytics_metric_cache
+6. optional: ai_analytics_scheduled_reports
+
+Suggested columns:
+
+ai_analytics_events:
+- id
+- event_type
+- event_key nullable
+- user_id nullable
+- session_id nullable
+- entity_type nullable
+- entity_id nullable
+- metadata json nullable
+- occurred_at timestamp
+- created_at
+- updated_at
+
+ai_analytics_chats:
+- id
+- user_id nullable
+- title nullable
+- context json nullable
+- created_at
+- updated_at
+
+ai_analytics_messages:
+- id
+- chat_id
+- role
+- content longText
+- meta json nullable
+- created_at
+- updated_at
+
+ai_analytics_reports:
+- id
+- user_id nullable
+- title
+- report_type nullable
+- filters json nullable
+- payload longText/json
+- exported_at nullable
+- created_at
+- updated_at
+
+ai_analytics_metric_cache:
+- id
+- metric_name
+- cache_key
+- filters_hash
+- payload longText/json
+- expires_at
+- created_at
+- updated_at
+
+==================================================
+EVENT TRACKING SYSTEM
+==================================================
+
+Create an event tracking API that developers can call from the host app.
+
+Provide:
+- facade
+- helper
+- service
+
+Example desired usage:
+aiAnalytics()->track('product_viewed', [
+    'product_id' => 15,
+    'user_id' => auth()->id(),
+    'source' => 'web',
+    'page' => request()->fullUrl(),
+]);
+
+Also support optional middleware or JS/beacon-ready API endpoint later.
+
+Trackable examples:
+- page_view
+- signup_completed
+- login
+- product_viewed
+- add_to_cart
+- checkout_started
+- order_paid
+- deposit_success
+- withdrawal_success
+
+==================================================
+AI CHAT SYSTEM REQUIREMENTS
+==================================================
+
+Build a serious AI chat layer.
+
+However:
+THE AI MUST NEVER EXECUTE RAW ARBITRARY SQL GENERATED FROM USER INPUT.
+
+Instead use a safe pipeline:
+
+User Question
+-> Intent Parser
+-> Metric Resolver
+-> Analytics Service
+-> Response Formatter
+-> Optional Report Generator
+
+Build these abstractions:
+- ChatService
+- IntentParser
+- MetricResolver
+- InsightFormatter
+- AiProviderInterface
+- OpenAiProvider
+
+Use environment variable:
+AI_ANALYTICS_API_KEY
+
+Also allow future providers:
+- Anthropic
+- Gemini
+- custom local provider
+
+The AI should primarily help with:
+- intent recognition
+- metric selection
+- summary writing
+- insight explanation
+- recommendation text
+
+==================================================
+SAFE QUERY BOUNDARY
+==================================================
+
+This is critical.
+
+No arbitrary SQL.
+No direct "run whatever the model says".
+
+Only registered metrics and trusted services may query data.
+
+All analytics access must go through internal services/repositories.
+
+==================================================
+METRIC REGISTRY SYSTEM
+==================================================
+
+Create a pluggable metric system.
+
+Add:
+- MetricInterface
+- AbstractMetric
+- MetricRegistry
+
+Each metric should define:
+- name
+- label
+- description
+- supported filters
+- execute(array $filters): array
+
+Create these initial metrics:
+1. SignupsCountMetric
+2. RevenueMetric
+3. WithdrawalsMetric
+4. DepositsMetric
+5. ConversionRateMetric
+6. TopSellingProductsMetric
+7. HighViewsLowSalesMetric
+8. TopViewedProductsMetric
+9. RevenueComparisonMetric
+10. ActiveUsersMetric
+
+Metrics must be auto-registered in a service provider or registry bootstrapper.
+
+==================================================
+ANALYTICS SERVICES
+==================================================
+
+Build analytics services that do the actual data work.
+
+Examples:
+- UserAnalyticsService
+- RevenueAnalyticsService
+- TransactionAnalyticsService
+- ProductAnalyticsService
+- FunnelAnalyticsService
+- EventAnalyticsService
+
+Include methods like:
+- getSignups(Carbon $from, Carbon $to)
+- getRevenue(Carbon $from, Carbon $to)
+- getDeposits(Carbon $from, Carbon $to)
+- getWithdrawals(Carbon $from, Carbon $to)
+- getTopSellingProducts(Carbon $from, Carbon $to, int $limit = 10)
+- getTopViewedProducts(Carbon $from, Carbon $to, int $limit = 10)
+- getHighViewsLowSalesProducts(Carbon $from, Carbon $to, int $limit = 10)
+- getSignupToDepositConversion(Carbon $from, Carbon $to)
+
+Use repositories or support classes where helpful.
+
+==================================================
+REPORT SYSTEM
+==================================================
+
+Build a normalized report builder.
+
+Create:
+- ReportBuilder
+- ReportService
+- ReportExporterInterface
+- PdfReportExporter
+- CsvReportExporter
+- JsonReportExporter
+- HtmlReportExporter
+
+Reports should have a normalized internal structure like:
+- title
+- subtitle
+- period
+- summary
+- metrics
+- charts
+- tables
+- insights
+- recommendations
+- metadata
+
+==================================================
+PDF EXPORT
+==================================================
+
+Use:
+barryvdh/laravel-dompdf
+
+Create printable PDF views.
+
+PDF reports should include:
+- report title
+- date range
+- KPI summary cards
+- tables
+- narrative AI summary
+- business insights
+- generated at timestamp
+
+==================================================
+DASHBOARD UI
+==================================================
+
+Create Blade-based admin UI.
+
+Pages:
+- /ai-analytics/dashboard
+- /ai-analytics/chat
+- /ai-analytics/reports
+- /ai-analytics/reports/{id}
+
+Dashboard should show:
+- total signups
+- total revenue
+- total deposits
+- total withdrawals
+- conversion rate
+- top products
+- most viewed low-sales items
+
+Chat page should show:
+- chat history sidebar
+- current conversation
+- message input
+- export button
+- suggested prompts
+
+Reports page should show:
+- saved reports list
+- filters
+- export actions
+
+Use clean Blade components and simple styling.
+Do not overcomplicate with frontend build tools unless absolutely necessary.
+Keep it package-friendly.
+
+==================================================
+ROUTES
+==================================================
+
+Create package routes with configurable route prefix.
+
+Example default:
+-ai-analytics/dashboard
+-ai-analytics/chat
+-ai-analytics/reports
+-ai-analytics/api/chat
+-ai-analytics/api/reports/export
+
+Support configurable middleware, default maybe:
+['web', 'auth']
+
+==================================================
+ARTISAN COMMANDS
+==================================================
+
+Create commands:
+1. ai-analytics:install
+2. ai-analytics:metrics:cache
+3. ai-analytics:report:generate
+
+Install command should:
+- publish config
+- publish migrations
+- publish views if needed
+- optionally print next steps
+
+==================================================
+INSTALLATION EXPERIENCE
+==================================================
+
+The package must be easy to install.
+
+Ensure:
+- composer.json package metadata is correct
+- service provider supports auto-discovery
+- publish tags exist:
+  - ai-analytics-config
+  - ai-analytics-migrations
+  - ai-analytics-views
+
+Expected install flow:
+1. composer require mrorko840/laravel-ai-analytics
+2. php artisan vendor:publish --tag=ai-analytics-config
+3. php artisan vendor:publish --tag=ai-analytics-migrations
+4. php artisan migrate
+
+==================================================
+SECURITY REQUIREMENTS
+==================================================
+
+Implement protective architecture for:
+- no raw AI SQL
+- no unsafe arbitrary model execution
+- optional field masking
+- no accidental leakage of sensitive data in responses
+- clear extension point for authorization policies
+- sanitization of exported report data
+
+Add config support for masking fields such as:
+- email
+- phone
+- balance
+- card fragments
+- national IDs
+
+==================================================
+PERFORMANCE REQUIREMENTS
+==================================================
+
+Add:
+- metrics cache support
+- cache key generation
+- queue-ready report generation
+- support for pagination in report tables
+- avoid N+1 issues
+- avoid loading entire tables blindly
+
+==================================================
+TESTING REQUIREMENTS
+==================================================
+
+Add a tests folder with meaningful tests for:
+- config resolution
+- metric registry
+- sample metrics
+- event tracking
+- report building
+- export service
+
+Use Orchestra Testbench if appropriate for package testing.
+
+==================================================
+DOCUMENTATION REQUIREMENTS
+==================================================
+
+Create a strong README.md containing:
+- package overview
+- installation steps
+- configuration guide
+- entity mapping guide
+- example usage
+- event tracking examples
+- custom metric example
+- report export example
+- security notes
+
+==================================================
+DELIVERABLE FORMAT
+==================================================
+
+Generate the COMPLETE package repository structure and provide full code for every important file.
+
+Do not stop at summaries.
+Do not give vague pseudo-code only.
+Do not skip critical files.
+
+At minimum provide full implementations for:
+- composer.json
+- service provider
+- facade
+- helper
+- config file
+- migrations
+- models
+- contracts
+- metric system
+- analytics services
+- chat services
+- AI provider abstraction
+- controllers
+- routes
+- blade views
+- commands
+- exporters
+- README
+- tests bootstrap
+
+==================================================
+IMPLEMENTATION STRATEGY
+==================================================
+
+Build the package in phases, but output real code:
+
+Phase 1:
+Foundation, composer, provider, config, migrations, models, facade, helper
+
+Phase 2:
+Metric registry, analytics services, repositories, initial metrics
+
+Phase 3:
+Chat system, intent parser, AI provider, safe resolver
+
+Phase 4:
+Report system, exporters, PDF support, saved reports
+
+Phase 5:
+Blade dashboard, chat UI, routes, controllers, commands
+
+Phase 6:
+README and tests
+
+==================================================
+IMPORTANT CODING STYLE
+==================================================
+
+- Use strict types where appropriate
+- Use typed properties and return types
+- Use Carbon for dates
+- Use clean namespaces
+- Use dependency injection
+- Prefer small, focused classes
+- Avoid giant God classes
+- Write code that is readable and maintainable
+- Keep the package extensible
+- Where implementation is complex, choose the most robust reasonable default
+- Where something is not fully knowable from the host app, expose configuration or contracts
+
+==================================================
+FINAL INSTRUCTION
+==================================================
+
+Generate a full GitHub-ready Laravel package codebase for mrorko840/laravel-ai-analytics.
+
+Start by outputting the repository tree, then generate each file with real code.
+
+Do not produce a shallow demo.
+Build a serious reusable package that a developer can actually install, extend, and iterate on.
+
+Additional execution rules:
+
+1. Whenever you create a class, ensure namespace and file path are consistent.
+2. Whenever you reference a dependency, include it in composer.json.
+3. Wherever a file is publishable, register it in the service provider.
+4. Keep host app assumptions minimal.
+5. If a feature is large, still scaffold the full file properly instead of skipping it.
+6. Prefer robust defaults over incomplete placeholders.
+7. Include comments only where helpful, not excessively.
+8. Ensure the package is installable without syntax errors.
+9. Use package-friendly Blade views without relying on Vite in the host app.
+10. Include example config mappings for users, orders, products, transactions, visits, and product views.
