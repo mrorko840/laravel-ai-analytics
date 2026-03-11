@@ -29,11 +29,13 @@ class ChatController extends Controller
             'message' => 'required|string',
         ]);
 
+        $userMessage = $request->input('message');
+
         $chat = AiAnalyticsChat::create([
-            'title' => substr($request->input('message'), 0, 50) . '...',
+            'title' => substr($userMessage, 0, 50) . '...',
         ]);
 
-        return redirect()->route('ai-analytics.chat', ['session' => $chat->id]);
+        return $this->processMessage($request, $chat, $userMessage);
     }
 
     public function message(Request $request, string $chatId)
@@ -45,38 +47,48 @@ class ChatController extends Controller
         $chat = AiAnalyticsChat::findOrFail($chatId);
         $userMessage = $request->input('message');
 
-        // Save User Message
-        AiAnalyticsMessage::create([
-            'ai_analytics_chat_id' => $chat->id,
-            'role' => 'user',
-            'content' => $userMessage,
-        ]);
+        return $this->processMessage($request, $chat, $userMessage);
+    }
 
-        // Process SQL & AI Generation Flow
-        $responsePayload = $this->aiQueryService->executePrompt($userMessage);
+    private function processMessage(Request $request, AiAnalyticsChat $chat, string $userMessage)
+    {
+        try {
+            // Save User Message locally utilizing the correct relationship ID key
+            AiAnalyticsMessage::create([
+                'chat_id' => $chat->id,
+                'role' => 'user',
+                'content' => $userMessage,
+            ]);
 
-        $replyContent = $responsePayload['reply'];
+            // Process SQL & AI Generation Flow
+            $responsePayload = $this->aiQueryService->executePrompt($userMessage);
 
-        // Optionally, append the generated SQL text securely in debug mode or hidden
-        $metaData = [
-            'sql' => $responsePayload['sql'],
-            'data_points' => count($responsePayload['data'] ?? []),
-        ];
+            $replyContent = $responsePayload['reply'] ?? "I couldn't process this request.";
+            $sql = $responsePayload['sql'] ?? null;
 
-        // Save AI Message
-        AiAnalyticsMessage::create([
-            'ai_analytics_chat_id' => $chat->id,
-            'role' => 'assistant',
-            'content' => $replyContent,
-        ]);
+            // Save AI Message securely
+            AiAnalyticsMessage::create([
+                'chat_id' => $chat->id,
+                'role' => 'assistant',
+                'content' => $replyContent,
+            ]);
 
-        // Touch the chat to update updated_at
-        $chat->touch();
+            // Touch the chat to update updated_at
+            $chat->touch();
 
-        return response()->json([
-            'status' => 'success',
-            'reply' => $replyContent,
-            'sql' => config('app.debug') ? $responsePayload['sql'] : null, // Show SQL in UI if debug
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'chat_id' => $chat->id, // Send ID back to frontend if they started a brand new chat
+                'reply' => $replyContent,
+                'sql' => config('app.debug') ? $sql : null, // Display SQL safely in debug interface
+            ]);
+
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred while processing your request inside the Chat Controller engine.',
+            ], 500);
+        }
     }
 }

@@ -59,7 +59,7 @@
                     </div>
                 @endforeach
             @else
-                <div class="h-full flex flex-col items-center justify-center text-center p-8">
+                <div id="hero-welcome" class="h-full flex flex-col items-center justify-center text-center p-8">
                     <div class="bg-indigo-100 p-4 rounded-full mb-4">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                     </div>
@@ -87,27 +87,16 @@
 
         <!-- Input Box -->
         <div class="p-4 bg-white border-t rounded-br-xl">
-            @if($currentSession)
             <form id="chat-form" class="relative">
-                <input type="text" id="prompt-input" autocomplete="off" class="w-full border-gray-300 border bg-gray-50 rounded-full py-4 pl-6 pr-16 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Ask about your data...">
+                <input type="text" id="prompt-input" autocomplete="off" class="w-full border-gray-300 border bg-gray-50 rounded-full py-4 pl-6 pr-16 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Ask about your data..." required>
                 <button type="submit" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition">
                     <svg class="w-5 h-5 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
             </form>
-            @else
-            <form method="POST" action="{{ route('ai-analytics.chat.store') }}" class="relative">
-                @csrf
-                <input type="text" name="message" id="prompt-input" autocomplete="off" class="w-full border-gray-300 border bg-gray-50 rounded-full py-4 pl-6 pr-16 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Ask about your data..." required>
-                <button type="submit" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition">
-                    <svg class="w-5 h-5 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                </button>
-            </form>
-            @endif
         </div>
     </div>
 </div>
 
-@if($currentSession)
 <script>
     const form = document.getElementById('chat-form');
     const input = document.getElementById('prompt-input');
@@ -117,6 +106,8 @@
     // Auto-scroll logic
     container.scrollTop = container.scrollHeight;
 
+    let currentSessionId = "{{ $currentSession ? $currentSession->id : '' }}";
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -125,6 +116,10 @@
 
         // Clear input
         input.value = '';
+
+        // If this is the first message and the hero is there, hide it
+        const hero = document.getElementById('hero-welcome');
+        if (hero) hero.style.display = 'none';
 
         // Add user message visually
         const userDiv = document.createElement('div');
@@ -136,8 +131,12 @@
         loading.classList.remove('hidden');
         container.scrollTop = container.scrollHeight;
 
+        let url = currentSessionId 
+            ? "{{ route('ai-analytics.chat') }}/" + currentSessionId + "/message" 
+            : "{{ route('ai-analytics.chat.store') }}";
+
         try {
-            const response = await fetch("{{ route('ai-analytics.chat.message', $currentSession->id) }}", {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -153,6 +152,12 @@
             loading.classList.add('hidden');
 
             if (data.status === 'success') {
+                if (!currentSessionId && data.chat_id) {
+                    currentSessionId = data.chat_id;
+                    // Update URL without reloading securely to allow persistence
+                    window.history.pushState({}, '', "?session=" + currentSessionId);
+                }
+
                 const aiDiv = document.createElement('div');
                 aiDiv.className = 'flex justify-start';
                 
@@ -168,7 +173,7 @@
                 container.insertBefore(aiDiv, loading);
                 
             } else {
-                alert("An error occurred.");
+                alert(data.message || "An error occurred fetching AI inference.");
             }
         } catch (err) {
             loading.classList.add('hidden');
@@ -178,5 +183,4 @@
         container.scrollTop = container.scrollHeight;
     });
 </script>
-@endif
 @endsection
