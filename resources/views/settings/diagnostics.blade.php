@@ -10,21 +10,23 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
     <div>
-        <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Required Entity Mappings</h3>
-        <ul class="space-y-3">
-            @foreach($diagnostics as $entity => $data)
+        <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Enabled Data Sources</h3>
+        <ul class="space-y-3 max-h-96 overflow-y-auto">
+            @foreach($enabledTables as $ds)
             <li class="bg-white rounded-lg shadow-sm border p-4 flex items-start justify-between">
                 <div>
-                    <h4 class="font-bold text-gray-700 capitalize">{{ str_replace('_', ' ', $entity) }}</h4>
-                    <p class="text-xs text-gray-500 mt-1">{{ $data['message'] }}</p>
+                    <h4 class="font-bold text-gray-700 font-mono text-sm">{{ $ds->table_name }}</h4>
+                    <p class="text-xs text-gray-500 mt-1">Enabled for Analytics AI Queries</p>
                 </div>
-                @if($data['status'] === 'ok')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">OK</span>
-                @else
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Missing</span>
-                @endif
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Ready</span>
             </li>
             @endforeach
+            
+            @if($enabledTables->isEmpty())
+                 <li class="bg-yellow-50 text-yellow-800 rounded-lg shadow-sm border border-yellow-200 p-4">
+                     No tables are enabled for Analytics yet. Go to Data Sources to enable tables.
+                 </li>
+            @endif
         </ul>
     </div>
 
@@ -38,6 +40,16 @@
                 </div>
                 
                 <div class="flex justify-between pb-2 border-b">
+                    <dt class="font-medium text-gray-500">Tables Discovered</dt>
+                    <dd class="font-bold">{{ count($allTables) }}</dd>
+                </div>
+                
+                <div class="flex justify-between pb-2 border-b">
+                    <dt class="font-medium text-gray-500">Dashboard Cards Configured</dt>
+                    <dd class="font-bold">{{ $cards }}</dd>
+                </div>
+
+                <div class="flex justify-between pb-2 border-b">
                     <dt class="font-medium text-gray-500">Analytics AI Provider</dt>
                     <dd class="font-bold uppercase">{{ $health['ai_provider'] }}</dd>
                 </div>
@@ -46,9 +58,9 @@
                     <dt class="font-medium text-gray-500">System Ready</dt>
                     <dd class="font-bold">
                         @if($health['metrics_ready'])
-                            <span class="text-green-600">Yes - Fully Mapped</span>
+                            <span class="text-green-600">Yes - Sources Active</span>
                         @else
-                            <span class="text-red-600">No - Incomplete Mappings</span>
+                            <span class="text-red-600">No - Select Data Sources</span>
                         @endif
                     </dd>
                 </div>
@@ -63,8 +75,8 @@
         </div>
         
         <div class="mt-6 bg-blue-50 border border-blue-200 rounded p-4">
-            <h4 class="font-bold text-blue-800 mb-1">What happens if a mapping is missing?</h4>
-            <p class="text-xs text-blue-700">The metrics utilizing that entity will fail gracefully inside the Dashboard and Chat, showing a friendly diagnostic error instead of crashing the system. AI Analytics never attempts to read undefined tables directly.</p>
+            <h4 class="font-bold text-blue-800 mb-1">How AI Assistant Works</h4>
+            <p class="text-xs text-blue-700">The chat assistant takes your enabled Database Tables and injects the column structures into the AI context window seamlessly. The LLM then generates READ-ONLY (SELECT) SQL queries which are intercepted and validated by our strict QueryGuard system before running internally to return an aggregate English summary to the User.</p>
         </div>
     </div>
 

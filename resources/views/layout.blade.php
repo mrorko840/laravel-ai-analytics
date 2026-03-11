@@ -24,9 +24,10 @@
                         <nav class="ml-6 flex items-center space-x-4">
                             <a href="{{ route('ai-analytics.dashboard') }}"
                                 class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="{{ route('ai-analytics.cards.index') }}"
+                                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Cards</a>
                             <a href="{{ route('ai-analytics.chat') }}"
-                                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Chat
-                                Assistant</a>
+                                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Chat Assistant</a>
                             <a href="{{ route('ai-analytics.reports') }}"
                                 class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Reports</a>
                             <a href="{{ route('ai-analytics.data-sources') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium border-l pl-4 ml-2">Data Sources</a>

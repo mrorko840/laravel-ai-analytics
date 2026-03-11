@@ -19,7 +19,8 @@ Route::post('/reports', [ReportController::class, 'store'])->name('ai-analytics.
 Route::get('/reports/{id}/export/{format}', [ReportController::class, 'export'])->name('ai-analytics.reports.export');
 
 Route::get('/data-sources', [DataSourceController::class, 'index'])->name('ai-analytics.data-sources');
-Route::get('/data-sources/tables/{table}', [DataSourceController::class, 'tableDetails'])->name('ai-analytics.data-sources.tables');
-Route::post('/data-sources/mappings', [DataSourceController::class, 'saveMapping'])->name('ai-analytics.data-sources.mappings.save');
+Route::post('/data-sources/toggle', [DataSourceController::class, 'toggle'])->name('ai-analytics.data-sources.toggle');
+
+Route::resource('cards', \Mrorko840\AiAnalytics\Http\Controllers\CardController::class)->names('ai-analytics.cards');
 
 Route::get('/diagnostics', [DiagnosticsController::class, 'index'])->name('ai-analytics.diagnostics');

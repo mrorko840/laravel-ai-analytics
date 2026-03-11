@@ -1,94 +1,182 @@
 @extends('ai-analytics::layout')
 
 @section('content')
-    <div class="flex h-[80vh] bg-white rounded-xl shadow-lg border overflow-hidden">
-        <!-- Sidebar -->
-        <div class="w-1/4 bg-gray-50 border-r flex flex-col">
-            <div class="p-4 border-b">
-                <form action="{{ route('ai-analytics.chat.store') }}" method="POST">
-                    @csrf
-                    <button type="submit"
-                        class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                        + New Chat
-                    </button>
-                </form>
-            </div>
-            <div class="flex-grow overflow-y-auto">
-                @foreach($chats as $c)
-                    <a href="?chat={{ $c->id }}"
-                        class="block p-4 border-b hover:bg-gray-100 {{ request('chat') == $c->id ? 'bg-blue-50 border-l-4 border-blue-500' : '' }}">
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ $c->title }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ $c->updated_at->diffForHumans() }}</p>
-                    </a>
-                @endforeach
-            </div>
+<div class="h-[calc(100vh-100px)] flex bg-white border rounded-xl overflow-hidden shadow-sm">
+    
+    <!-- Sidebar -->
+    <div class="w-1/4 min-w-[250px] border-r bg-gray-50 flex flex-col">
+        <div class="p-4 border-b bg-white">
+            <h3 class="font-bold text-gray-800">Your Conversations</h3>
+            <p class="text-xs text-gray-500 mt-1">Talk to your database.</p>
         </div>
+        
+        <div class="flex-grow overflow-y-auto p-2 space-y-2">
+            @foreach($sessions as $chat)
+                <a href="{{ route('ai-analytics.chat', ['session' => $chat->id]) }}" 
+                   class="block p-3 rounded-lg border {{ request('session') == $chat->id ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-transparent hover:bg-gray-100' }} transition cursor-pointer">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $chat->title }}</p>
+                    <span class="text-xs text-gray-400 block mt-1">{{ $chat->updated_at->diffForHumans() }}</span>
+                </a>
+            @endforeach
 
-        <!-- Main Chat Area -->
-        <div class="w-3/4 flex flex-col">
-            @php
-                $activeChat = null;
-                if (request('chat')) {
-                    $activeChat = $chats->firstWhere('id', request('chat'));
-                }
-            @endphp
-
-            <!-- Messages Area -->
-            <div class="flex-grow p-6 overflow-y-auto bg-gray-50" id="chat-messages">
-                @if($activeChat)
-                    @foreach($activeChat->messages as $msg)
-                        <div class="mb-6 flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }}">
-                            <div
-                                class="'max-w-xl rounded-2xl p-4 ' . {{ $msg->role === 'user' ? 'class="bg-blue-600 text-white"' : 'class="bg-white shadow-sm border text-gray-800"' }}">
-                                <div class="prose {{ $msg->role === 'user' ? 'prose-invert' : '' }} text-sm max-w-none">
-                                    {!! nl2br(e($msg->content)) !!}
-                                </div>
-
-                                @if($msg->role === 'assistant' && !empty($msg->meta['data']))
-                                    <div class="mt-4 p-3 bg-gray-50 rounded border text-xs overflow-x-auto text-gray-700">
-                                        <pre>Based on {{ count($msg->meta['data']) }} data points analyzed.</pre>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="h-full flex items-center justify-center text-gray-400 flex-col">
-                        <svg class="h-16 w-16 mb-4 text-blue-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
-                        <h2 class="text-xl font-medium text-gray-600">AI Analytics Assistant</h2>
-                        <p class="mt-2 text-sm">Create a new chat to ask questions about your data.</p>
-                    </div>
-                @endif
-            </div>
-
-            <!-- Input Area -->
-            <div class="p-4 bg-white border-t">
-                @if($activeChat)
-                    <form action="{{ route('ai-analytics.chat.message', $activeChat->id) }}" method="POST"
-                        class="flex items-end shadow-sm border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-gray-50 p-2">
-                        @csrf
-                        <textarea name="message" rows="2"
-                            class="w-full bg-transparent border-0 focus:ring-0 resize-none flex-grow p-2"
-                            placeholder="Ask about revenue, signups, products..."></textarea>
-                        <button type="submit"
-                            class="m-2 bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition flex-shrink-0 flex items-center justify-center">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                            </svg>
-                        </button>
-                    </form>
-                @endif
-            </div>
+            @if($sessions->isEmpty())
+                <p class="text-sm text-center text-gray-500 p-4">No recent chats.</p>
+            @endif
+        </div>
+        
+        <div class="p-4 border-t bg-white">
+            <a href="{{ route('ai-analytics.chat') }}" class="block text-center w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+                Start New Chat
+            </a>
         </div>
     </div>
 
-    <script>
-        // Auto scroll to bottom of chat
-        const messages = document.getElementById('chat-messages');
-        if (messages) messages.scrollTop = messages.scrollHeight;
-    </script>
+    <!-- Chat Area -->
+    <div class="w-3/4 flex flex-col relative h-full">
+        @php
+            $currentSession = request('session') ? $sessions->firstWhere('id', request('session')) : null;
+        @endphp
+
+        <!-- Header -->
+        <div class="p-4 border-b bg-white flex justify-between items-center z-10">
+            <h2 class="font-bold text-gray-800">{{ $currentSession ? 'Current Chat' : 'New Analytical Query' }}</h2>
+            <div class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-mono font-medium flex items-center">
+                <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> AI QueryGuard Active
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="flex-grow overflow-y-auto p-6 space-y-6" id="messages-container">
+            @if($currentSession)
+                @foreach($currentSession->messages()->oldest()->get() as $message)
+                    <div class="flex {{ $message->role === 'user' ? 'justify-end' : 'justify-start' }}">
+                        <div class="max-w-xl {{ $message->role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800' }} p-4 rounded-xl shadow-sm">
+                            <p class="text-sm whitespace-pre-wrap leading-relaxed">{{ $message->content }}</p>
+                            @if($message->role === 'assistant' && config('app.debug'))
+                            {{-- We can put debug logic here if we injected SQL later --}}
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="h-full flex flex-col items-center justify-center text-center p-8">
+                    <div class="bg-indigo-100 p-4 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Ask your database anything</h3>
+                    <p class="text-gray-500 mt-2 max-w-md">Query your database using natural language. The AI will generate secure read-only analytical queries over your <a href="{{ route('ai-analytics.data-sources') }}" class="text-indigo-600 underline">Enabled Tables</a>.</p>
+                    
+                    <div class="mt-8 grid grid-cols-2 gap-4 w-full max-w-lg">
+                        <div class="bg-gray-50 border p-3 text-sm text-gray-600 rounded cursor-pointer hover:bg-gray-100 text-left" onclick="document.getElementById('prompt-input').value = this.innerText">How many users registered this month?</div>
+                        <div class="bg-gray-50 border p-3 text-sm text-gray-600 rounded cursor-pointer hover:bg-gray-100 text-left" onclick="document.getElementById('prompt-input').value = this.innerText">Show me the top 5 products by combined revenue.</div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Loading indicator -->
+            <div id="loading" class="hidden flex justify-start">
+                <div class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-sm text-sm flex items-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing database structure and running query...
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Box -->
+        <div class="p-4 bg-white border-t rounded-br-xl">
+            @if($currentSession)
+            <form id="chat-form" class="relative">
+                <input type="text" id="prompt-input" autocomplete="off" class="w-full border-gray-300 border bg-gray-50 rounded-full py-4 pl-6 pr-16 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Ask about your data...">
+                <button type="submit" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition">
+                    <svg class="w-5 h-5 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </form>
+            @else
+            <form method="POST" action="{{ route('ai-analytics.chat.store') }}" class="relative">
+                @csrf
+                <input type="text" name="message" id="prompt-input" autocomplete="off" class="w-full border-gray-300 border bg-gray-50 rounded-full py-4 pl-6 pr-16 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Ask about your data..." required>
+                <button type="submit" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition">
+                    <svg class="w-5 h-5 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </form>
+            @endif
+        </div>
+    </div>
+</div>
+
+@if($currentSession)
+<script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('prompt-input');
+    const container = document.getElementById('messages-container');
+    const loading = document.getElementById('loading');
+    
+    // Auto-scroll logic
+    container.scrollTop = container.scrollHeight;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Clear input
+        input.value = '';
+
+        // Add user message visually
+        const userDiv = document.createElement('div');
+        userDiv.className = 'flex justify-end';
+        userDiv.innerHTML = `<div class="max-w-xl bg-indigo-600 text-white p-4 rounded-xl shadow-sm"><p class="text-sm whitespace-pre-wrap leading-relaxed">${text}</p></div>`;
+        container.insertBefore(userDiv, loading);
+        
+        // Show loading
+        loading.classList.remove('hidden');
+        container.scrollTop = container.scrollHeight;
+
+        try {
+            const response = await fetch("{{ route('ai-analytics.chat.message', $currentSession->id) }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ message: text })
+            });
+            
+            const data = await response.json();
+            
+            // Hide loading
+            loading.classList.add('hidden');
+
+            if (data.status === 'success') {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'flex justify-start';
+                
+                let html = `<div class="max-w-xl bg-gray-100 text-gray-800 p-4 rounded-xl shadow-sm">
+                        <p class="text-sm whitespace-pre-wrap leading-relaxed">${data.reply}</p>`;
+                
+                if (data.sql) {
+                    html += `<div class="mt-3 p-2 bg-gray-800 text-green-400 font-mono text-[10px] rounded overflow-x-auto"><span class="text-gray-400 block mb-1">Generated Safe SQL:</span>${data.sql}</div>`;
+                }
+
+                html += `</div>`;
+                aiDiv.innerHTML = html;
+                container.insertBefore(aiDiv, loading);
+                
+            } else {
+                alert("An error occurred.");
+            }
+        } catch (err) {
+            loading.classList.add('hidden');
+            alert("Network error.");
+        }
+        
+        container.scrollTop = container.scrollHeight;
+    });
+</script>
+@endif
 @endsection

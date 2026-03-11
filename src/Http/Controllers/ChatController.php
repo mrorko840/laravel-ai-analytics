@@ -4,54 +4,79 @@ namespace Mrorko840\AiAnalytics\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
-use Mrorko840\AiAnalytics\Chat\ChatService;
 use Mrorko840\AiAnalytics\Models\AiAnalyticsChat;
+use Mrorko840\AiAnalytics\Models\AiAnalyticsMessage;
+use Mrorko840\AiAnalytics\Services\AIQueryService;
 
 class ChatController extends Controller
 {
-    protected ChatService $chatService;
+    private AIQueryService $aiQueryService;
 
-    public function __construct(ChatService $chatService)
+    public function __construct(AIQueryService $aiQueryService)
     {
-        $this->chatService = $chatService;
+        $this->aiQueryService = $aiQueryService;
     }
 
     public function index()
     {
-        $chats = AiAnalyticsChat::where('user_id', auth()->id())
-            ->orderBy('updated_at', 'desc')
-            ->get();
-
-        return view('ai-analytics::chat', compact('chats'));
+        $sessions = AiAnalyticsChat::orderBy('updated_at', 'desc')->get();
+        return view('ai-analytics::chat', compact('sessions'));
     }
 
     public function store(Request $request)
     {
-        $chat = $this->chatService->createChat(auth()->id(), 'New Conversation');
-        return redirect()->route('ai-analytics.chat', ['chat' => $chat->id]);
-    }
-
-    public function message(Request $request, $chatId)
-    {
-        $request->validate(['message' => 'required|string']);
-
-        $response = $this->chatService->handleUserMessage($chatId, $request->input('message'));
-
-        if ($request->wantsJson()) {
-            return response()->json($response);
-        }
-
-        return back()->with('response', $response);
-    }
-
-    public function apiMessage(Request $request)
-    {
         $request->validate([
-            'chat_id' => 'required|integer',
             'message' => 'required|string',
         ]);
 
-        $response = $this->chatService->handleUserMessage($request->input('chat_id'), $request->input('message'));
-        return response()->json($response);
+        $chat = AiAnalyticsChat::create([
+            'title' => substr($request->input('message'), 0, 50) . '...',
+        ]);
+
+        return redirect()->route('ai-analytics.chat', ['session' => $chat->id]);
+    }
+
+    public function message(Request $request, string $chatId)
+    {
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $chat = AiAnalyticsChat::findOrFail($chatId);
+        $userMessage = $request->input('message');
+
+        // Save User Message
+        AiAnalyticsMessage::create([
+            'ai_analytics_chat_id' => $chat->id,
+            'role' => 'user',
+            'content' => $userMessage,
+        ]);
+
+        // Process SQL & AI Generation Flow
+        $responsePayload = $this->aiQueryService->executePrompt($userMessage);
+
+        $replyContent = $responsePayload['reply'];
+
+        // Optionally, append the generated SQL text securely in debug mode or hidden
+        $metaData = [
+            'sql' => $responsePayload['sql'],
+            'data_points' => count($responsePayload['data'] ?? []),
+        ];
+
+        // Save AI Message
+        AiAnalyticsMessage::create([
+            'ai_analytics_chat_id' => $chat->id,
+            'role' => 'assistant',
+            'content' => $replyContent,
+        ]);
+
+        // Touch the chat to update updated_at
+        $chat->touch();
+
+        return response()->json([
+            'status' => 'success',
+            'reply' => $replyContent,
+            'sql' => config('app.debug') ? $responsePayload['sql'] : null, // Show SQL in UI if debug
+        ]);
     }
 }

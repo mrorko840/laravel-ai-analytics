@@ -5,7 +5,7 @@ namespace Mrorko840\AiAnalytics\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Mrorko840\AiAnalytics\Services\SchemaDiscoveryService;
-use Mrorko840\AiAnalytics\Models\AiAnalyticsEntityMapping;
+use Mrorko840\AiAnalytics\Models\AiAnalyticsDataSource;
 
 class DataSourceController extends Controller
 {
@@ -19,40 +19,31 @@ class DataSourceController extends Controller
     public function index()
     {
         $tables = $this->schemaService->getAllTables();
-        $mappings = AiAnalyticsEntityMapping::where('is_active', true)->get();
+        $enabledSources = AiAnalyticsDataSource::all()->keyBy('table_name');
 
-        return view('ai-analytics::settings.data-sources', compact('tables', 'mappings'));
+        $tableDetails = [];
+        foreach ($tables as $table) {
+            $tableDetails[$table] = [
+                'columns' => $this->schemaService->getTableColumns($table),
+                'is_enabled' => isset($enabledSources[$table]) ? $enabledSources[$table]->is_enabled : false,
+            ];
+        }
+
+        return view('ai-analytics::settings.data-sources', compact('tableDetails'));
     }
 
-    public function tableDetails(string $table)
-    {
-        $columns = $this->schemaService->getTableColumns($table);
-        $entities = ['user', 'order', 'order_item', 'product', 'transaction', 'visit', 'product_view'];
-
-        return view('ai-analytics::settings.table-details', compact('table', 'columns', 'entities'));
-    }
-
-    public function saveMapping(Request $request)
+    public function toggle(Request $request)
     {
         $request->validate([
-            'entity_name' => 'required|string',
             'table_name' => 'required|string',
-            'mapping' => 'required|array',
+            'is_enabled' => 'required|boolean',
         ]);
 
-        $entity = $request->input('entity_name');
-
-        $mapping = AiAnalyticsEntityMapping::updateOrCreate(
-            ['entity_name' => $entity],
-            [
-                'source_type' => 'table',
-                'table_name' => $request->input('table_name'),
-                'mapping' => $request->input('mapping'),
-                'is_active' => true,
-            ]
+        AiAnalyticsDataSource::updateOrCreate(
+            ['table_name' => $request->input('table_name')],
+            ['is_enabled' => $request->input('is_enabled')]
         );
 
-        return redirect()->route('ai-analytics.data-sources.tables', $request->input('table_name'))
-            ->with('success', 'Mapping saved successfully.');
+        return response()->json(['success' => true]);
     }
 }
