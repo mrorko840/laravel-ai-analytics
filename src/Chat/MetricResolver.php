@@ -21,9 +21,9 @@ class MetricResolver
     {
         $metricNames = $intent['metric_names'] ?? [];
         $filters = $intent['filters'] ?? [];
-
+        
         $results = [];
-
+        
         foreach ($metricNames as $name) {
             try {
                 $metric = $this->registry->get($name);
@@ -33,12 +33,19 @@ class MetricResolver
                 ];
             } catch (Exception $e) {
                 // Log exception gracefully instead of crashing
+                report($e);
+                
+                $errorMsg = $e->getMessage();
+                if (!config('app.debug')) {
+                    $errorMsg = "Metric encountered a configuration or data mapping error.";
+                }
+
                 $results[$name] = [
-                    'error' => "Metric could not be resolved or executed.",
+                    'error' => "Metric failure: " . $errorMsg,
                 ];
             }
         }
-
+        
         return $results;
     }
 }

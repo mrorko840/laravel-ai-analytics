@@ -5,12 +5,13 @@ A **UNIVERSAL AI-powered analytics and reporting package** for Laravel that can 
 ## Overview
 
 This package is a production-grade analytics intelligence layer for Laravel. It provides:
-1. Config-driven abstract entity mapping (Users, Orders, Products).
-2. Pluggable Metric Registry system.
-3. Natural language chat interface for analytics questions (without exposing raw SQL to AI).
-4. Reporting engine with PDF, CSV, JSON and HTML exports.
-5. Simple drop-in Blade UI for Dashboards, Reports, and Chat.
-6. Robust event tracking framework.
+1. Dynamic UI-driven database schema discovery and semantic table mapping.
+2. Abstract entity resolution (Users, Orders, Products, Transactions) independent of your application codebase.
+3. Pluggable Metric Registry system pulling from mapped data.
+4. Natural language chat interface for analytics questions (without exposing raw SQL to AI).
+5. Reporting engine with PDF, CSV, JSON and HTML exports.
+6. Drop-in Blade UI for Dashboards, Data Sources configuration, Reports, and System Diagnostics.
+7. Robust event tracking framework.
 
 ## Installation
 
@@ -23,51 +24,40 @@ composer require mrorko840/laravel-ai-analytics
 ```bash
 php artisan ai-analytics:install
 ```
-This will publish the configuration (`config/ai-analytics.php`) and standard database migrations.
-
-3. Complete installation by running migrations (if you didn't do it via the command):
-```bash
-php artisan migrate
-```
-
-## Configuration
-
-In your `.env` file, configure your AI Provider:
-
-```env
-AI_ANALYTICS_ENABLED=true
-AI_ANALYTICS_PROVIDER=openai
-AI_ANALYTICS_MODEL=gpt-4o
-AI_ANALYTICS_API_KEY=sk-your-openai-api-key
-```
-
-### Entity Mapping (Very Important)
-
-Open `config/ai-analytics.php`. This package relies on dynamic entity mapping so it works with ANY schema. You must map your host application's models to the standard analytics entities.
-
-```php
-'entities' => [
-    'user' => [
-        'model' => App\Models\User::class,
-        'created_at_column' => 'created_at',
-    ],
-    'order' => [
-        'model' => App\Models\Order::class,
-        'amount_column' => 'grand_total', // Your specific amount column
-        'status_column' => 'order_status',
-        'paid_statuses' => ['paid', 'shipped', 'delivered'],
-    ],
-    // Map product, transaction, visit, product_view...
-]
-```
 
 ## Security & Architecture
 
-**Zero Raw SQL AI Execution**: The AI *never* generates SQL. It parses intent from the unified Metric Registry, determines the context, and instructs secure service-layer metrics to execute and return strict data arrays.
+**Zero Raw SQL AI Execution**: The AI *never* generates SQL. 
+AI Analytics uses a completely safe, deterministic process:
+1. User provides a question.
+2. AI extracts intent and matches it to your universally configured Metric Registry.
+3. Safe PHP query abstractions parse metrics based on your UI-configured `ai_analytics_entity_mappings`.
+4. Extracted data points are sent to the AI strictly to formulate English insights.
+5. Sensitive fields are never queried automatically.
+
+## Mapping Your Database
+
+You **do not** need to re-write your application to fit this package. Instead, the package adapts to your schema.
+
+1. Navigate to `/ai-analytics/data-sources` locally inside your Laravel App.
+2. Inspect the schemas directly from the `Data Sources` menu.
+3. Click a table (e.g., `customers` or `sales`).
+4. Assign it a Semantic Entity role (e.g. `User` or `Order`).
+5. Map necessary columns (`Primary Key`, `Created At`, `Amount`, etc) using the provided dropdowns.
+6. Save your mapping.
+
+*Mappings are written to `ai_analytics_entity_mappings` and will immediately power the Dashboard, Reports, and Chat Analytics.*
+
+## System Diagnostics
+
+Visit `/ai-analytics/diagnostics` at any time to check:
+- Package health status.
+- Remaining unmapped entities needed to power complex multi-table functions.
+- Metric readiness flags.
 
 ## Event Tracking API
 
-You can track business events natively from the host app:
+You can track arbitrary business events natively from the host app using the unified framework:
 
 ```php
 // With Facade
@@ -92,16 +82,13 @@ class CustomChurnMetric extends \Mrorko840\AiAnalytics\Metrics\AbstractMetric {
     public function description(): string { return 'Calculates percentage of users who cancelled.'; }
     public function supportedFilters(): array { return ['month']; }
     public function execute(array $filters = []): mixed {
-        return ['value' => 5.2]; // Your business logic here
+        // Query mapped models or custom query here
+        return ['value' => 5.2];
     }
 }
 ```
 
 2. Register it in `config/ai-analytics.php` inside the `metrics` array OR strictly via `MetricRegistry->register()` in your AppServiceProvider.
-
-## Accessing the UI
-
-Visit your configured route prefix, by default: `/ai-analytics/dashboard`
 
 ## Testing
 

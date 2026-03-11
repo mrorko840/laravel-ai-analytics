@@ -39,7 +39,22 @@ class ChatService
 
         if (!empty($intent['metric_names'])) {
             $metricData = $this->metricResolver->resolveAndExecute($intent);
-            $replyContent = $this->insightFormatter->format($message, $metricData);
+            
+            $hasData = false;
+            $firstError = null;
+            foreach ($metricData as $res) {
+                if (!isset($res['error'])) {
+                    $hasData = true;
+                } elseif (!$firstError) {
+                    $firstError = $res['error'];
+                }
+            }
+            
+            if (!$hasData && $firstError) {
+                $replyContent = "I couldn't run this analysis because a required mapping is missing or invalid. Details: " . $firstError;
+            } else {
+                $replyContent = $this->insightFormatter->format($message, $metricData);
+            }
         } else {
             // Not a data question, or generic
             $replyContent = "I'm not sure which metrics to look at for that question. Could you be more specific about the data you want (e.g. signups, revenue, deposits)?";

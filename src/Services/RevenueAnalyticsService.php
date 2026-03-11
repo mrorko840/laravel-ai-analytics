@@ -7,21 +7,31 @@ use Illuminate\Support\Facades\DB;
 
 class RevenueAnalyticsService
 {
+    private EntityMappingResolver $resolver;
+
+    public function __construct(EntityMappingResolver $resolver)
+    {
+        $this->resolver = $resolver;
+    }
+
     public function getRevenue(Carbon $from, Carbon $to): float
     {
-        $config = config('ai-analytics.entities.order');
-        $modelClass = $config['model'] ?? null;
-
-        if (!$modelClass || !class_exists($modelClass)) {
-            return 0.0;
+        $resolved = $this->resolver->resolveEntity('order');
+        
+        if (!$resolved) {
+            throw new \Exception("Order entity mapping is missing.");
         }
 
-        $createdAtColumn = $config['created_at_column'] ?? 'created_at';
-        $amountColumn = $config['amount_column'] ?? 'total';
-        $statusColumn = $config['status_column'] ?? 'status';
-        $paidStatuses = $config['paid_statuses'] ?? [];
+        $createdAtColumn = $resolved['mapping']['created_at_column'] ?? 'created_at';
+        $amountColumn = $resolved['mapping']['amount_column'] ?? 'total';
+        $statusColumn = $resolved['mapping']['status_column'] ?? 'status';
+        
+        $paidStatuses = $resolved['mapping']['paid_statuses'] ?? [];
+        if (is_string($paidStatuses)) {
+            $paidStatuses = array_map('trim', explode(',', $paidStatuses));
+        }
 
-        $query = $modelClass::query()
+        $query = $this->resolver->getQueryBuilder('order')
             ->whereBetween($createdAtColumn, [$from, $to]);
 
         if (!empty($statusColumn) && !empty($paidStatuses)) {

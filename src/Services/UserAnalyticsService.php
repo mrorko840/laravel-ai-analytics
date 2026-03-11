@@ -7,17 +7,24 @@ use Illuminate\Support\Facades\DB;
 
 class UserAnalyticsService
 {
+    private EntityMappingResolver $resolver;
+
+    public function __construct(EntityMappingResolver $resolver)
+    {
+        $this->resolver = $resolver;
+    }
+
     public function getSignupsCount(Carbon $from, Carbon $to): int
     {
-        $config = config('ai-analytics.entities.user');
-        $modelClass = $config['model'] ?? null;
-
-        if (!$modelClass || !class_exists($modelClass)) {
-            return 0;
+        $resolved = $this->resolver->resolveEntity('user');
+        
+        if (!$resolved) {
+            throw new \Exception("User entity mapping is missing.");
         }
 
-        $createdAtColumn = $config['created_at_column'] ?? 'created_at';
-
-        return $modelClass::whereBetween($createdAtColumn, [$from, $to])->count();
+        $createdAtColumn = $resolved['mapping']['created_at_column'] ?? 'created_at';
+        $query = $this->resolver->getQueryBuilder('user');
+        
+        return $query->whereBetween($createdAtColumn, [$from, $to])->count();
     }
 }

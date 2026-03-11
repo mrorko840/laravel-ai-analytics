@@ -29,6 +29,7 @@
                                 Assistant</a>
                             <a href="{{ route('ai-analytics.reports') }}"
                                 class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+                            <a href="{{ route('ai-analytics.data-sources') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium border-l pl-4 ml-2">Data Sources</a>
                         </nav>
                     </div>
                 </div>

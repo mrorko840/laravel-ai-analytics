@@ -6,6 +6,13 @@ use Carbon\Carbon;
 
 class TransactionAnalyticsService
 {
+    private EntityMappingResolver $resolver;
+
+    public function __construct(EntityMappingResolver $resolver)
+    {
+        $this->resolver = $resolver;
+    }
+
     public function getWithdrawals(Carbon $from, Carbon $to): float
     {
         return $this->sumTransactionsByType('withdrawal_value', $from, $to);
@@ -18,22 +25,25 @@ class TransactionAnalyticsService
 
     protected function sumTransactionsByType(string $typeConfigKey, Carbon $from, Carbon $to): float
     {
-        $config = config('ai-analytics.entities.transaction');
-        $modelClass = $config['model'] ?? null;
-
-        if (!$modelClass || !class_exists($modelClass)) {
-            return 0.0;
+        $resolved = $this->resolver->resolveEntity('transaction');
+        
+        if (!$resolved) {
+            throw new \Exception("Transaction entity mapping is missing.");
         }
 
-        $createdAtColumn = $config['created_at_column'] ?? 'created_at';
-        $amountColumn = $config['amount_column'] ?? 'amount';
-        $typeColumn = $config['type_column'] ?? 'type';
-        $statusColumn = $config['status_column'] ?? 'status';
+        $createdAtColumn = $resolved['mapping']['created_at_column'] ?? 'created_at';
+        $amountColumn = $resolved['mapping']['amount_column'] ?? 'amount';
+        $typeColumn = $resolved['mapping']['type_column'] ?? 'type';
+        $statusColumn = $resolved['mapping']['status_column'] ?? 'status';
+        
+        $typeValue = $resolved['mapping'][$typeConfigKey] ?? null;
+        
+        $successStatuses = $resolved['mapping']['success_statuses'] ?? [];
+        if (is_string($successStatuses)) {
+            $successStatuses = array_map('trim', explode(',', $successStatuses));
+        }
 
-        $typeValue = $config[$typeConfigKey] ?? null;
-        $successStatuses = $config['success_statuses'] ?? [];
-
-        $query = $modelClass::query()
+        $query = $this->resolver->getQueryBuilder('transaction')
             ->whereBetween($createdAtColumn, [$from, $to]);
 
         if ($typeValue) {
