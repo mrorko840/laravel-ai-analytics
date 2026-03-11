@@ -12,6 +12,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('ai-analyt
 Route::get('/chat', [ChatController::class, 'index'])->name('ai-analytics.chat');
 Route::post('/chat', [ChatController::class, 'store'])->name('ai-analytics.chat.store');
 Route::post('/chat/{chatId}/message', [ChatController::class, 'message'])->name('ai-analytics.chat.message');
+Route::delete('/chat/{chatId}', [ChatController::class, 'destroy'])->name('ai-analytics.chat.destroy');
 
 Route::get('/reports', [ReportController::class, 'index'])->name('ai-analytics.reports');
 Route::get('/reports/{id}', [ReportController::class, 'show'])->name('ai-analytics.reports.show');

@@ -12,18 +12,21 @@ class AIQueryService
     protected AiProviderInterface $aiProvider;
     protected SchemaDiscoveryService $schemaService;
     protected QueryGuardService $queryGuard;
+    protected ChatMemoryService $memoryService;
 
     public function __construct(
         AiProviderInterface $aiProvider,
         SchemaDiscoveryService $schemaService,
-        QueryGuardService $queryGuard
+        QueryGuardService $queryGuard,
+        ChatMemoryService $memoryService
     ) {
         $this->aiProvider = $aiProvider;
         $this->schemaService = $schemaService;
         $this->queryGuard = $queryGuard;
+        $this->memoryService = $memoryService;
     }
 
-    public function executePrompt(string $prompt): array
+    public function executePrompt(string $prompt, ?\Mrorko840\AiAnalytics\Models\AiAnalyticsChat $chat = null): array
     {
         $schemaContext = $this->buildSchemaContext();
 
@@ -43,6 +46,23 @@ class AIQueryService
         $systemPrompt .= "3. Format dates properly depending on the usual SQL standards.\n";
         
         try {
+            // Include conversational memory arrays
+            $messagesPayload = [];
+            if ($chat) {
+                // If we have a chat ID, the prompt logic relies on AI interface supporting history arrays
+                // Assuming AiProvider->ask supports a 'context' block or similar, we serialize past messages.
+                // For a robust implementation we stringify the past context explicitly if specific roles aren't supported uniformly yet.
+                $historyStrings = [];
+                $recentContext = $this->memoryService->getRecentHistory($chat);
+                foreach ($recentContext as $msg) {
+                    $historyStrings[] = ($msg['role'] === 'user' ? 'User:' : 'AI:') . ' ' . $msg['content'];
+                }
+                
+                if (!empty($historyStrings)) {
+                    $systemPrompt .= "\nPREVIOUS CONVERSATIONAL MEMORY TO HELP YOU UNDERSTAND CONTEXT ('It', 'That', etc):\n" . implode("\n", $historyStrings) . "\n";
+                }
+            }
+
             // 1. Get SQL from AI
             $sql = $this->aiProvider->ask($prompt, [$systemPrompt]);
             

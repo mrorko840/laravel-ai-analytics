@@ -61,7 +61,7 @@ class ChatController extends Controller
             ]);
 
             // Process SQL & AI Generation Flow
-            $responsePayload = $this->aiQueryService->executePrompt($userMessage);
+            $responsePayload = $this->aiQueryService->executePrompt($userMessage, $chat);
 
             $replyContent = $responsePayload['reply'] ?? "I couldn't process this request.";
             $sql = $responsePayload['sql'] ?? null;
@@ -90,5 +90,13 @@ class ChatController extends Controller
                 'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred while processing your request inside the Chat Controller engine.',
             ], 500);
         }
+    }
+
+    public function destroy(string $chatId)
+    {
+        $chat = AiAnalyticsChat::findOrFail($chatId);
+        $chat->delete(); // This cascades and drops messages implicitly thanks to the cascaded schema.
+
+        return redirect()->route('ai-analytics.chat')->with('success', 'Chat session deleted successfully.');
     }
 }
